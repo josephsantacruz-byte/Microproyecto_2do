@@ -3,7 +3,7 @@ use ieee.std_logic_1164.all;
 
 package pkg_componentes is
 
-    -- 1. Componente del Controlador PIR
+    -- 1. Componente del Controlador PIR (Filtro antirrebote y flancos)
     component controlador_pir is
         generic (
             ANCHO_CONTEO : integer := 20
@@ -16,7 +16,7 @@ package pkg_componentes is
         );
     end component;
 
-    -- 2. Componente de la Memoria ROM
+    -- 2. Componente de la Memoria ROM (Almacén de eventos)
     component rom_memoria is
         generic (
             DATA_WIDTH : positive := 8;
@@ -29,7 +29,7 @@ package pkg_componentes is
         );
     end component;
 
-    -- 3. Componente de la Memoria RAM
+    -- 3. Componente de la Memoria RAM (Registro dinámico de presencia)
     component ram_memoria is
         generic (
             DATA_WIDTH : positive := 8;
@@ -44,7 +44,7 @@ package pkg_componentes is
         );
     end component;
 
-    -- 4. Componente de la Unidad de Control (FSM)
+    -- 4. Componente de la Unidad de Control (FSM coordinadora)
     component unidad_control is
         generic (
             ADDR_WIDTH : positive := 4;
@@ -62,8 +62,17 @@ package pkg_componentes is
         );
     end component;
 
+    -- 5. Componente del Decodificador de 7 Segmentos (Visualización física)
+    component hex_decoder is
+        port (
+            bin_in  : in  std_logic_vector(6 downto 0);
+            seg_dec : out std_logic_vector(6 downto 0);
+            seg_uni : out std_logic_vector(6 downto 0)
+        );
+    end component;
+
 end package pkg_componentes;
 
 package body pkg_componentes is
-    -- El cuerpo se mantiene vacío ya que solo contiene declaraciones de componentes
+    -- El cuerpo del paquete se mantiene vacío ya que solo contiene declaraciones de componentes
 end package body pkg_componentes;
