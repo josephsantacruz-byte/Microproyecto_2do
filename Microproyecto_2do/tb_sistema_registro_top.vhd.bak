@@ -1,0 +1,97 @@
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+-- Importamos el paquete del sistema para estandarización
+use work.pkg_system.all;
+
+entity tb_sistema_registro_top is
+end entity tb_sistema_registro_top;
+
+architecture arqui_tb_sistema_registro_top of tb_sistema_registro_top is
+
+    -- Señales de estímulo y monitoreo para el sistema Top
+    signal reloj_tb      : std_logic := '0';
+    signal reset_tb      : std_logic := '1';
+    signal sensor_pir_tb : std_logic := '0';
+    signal alarma_out_tb : std_logic;
+
+    -- Periodo del reloj principal (50 MHz -> 20 ns)
+    constant PERIODODE_RELOJ : time := 20 ns;
+
+begin
+
+    -- Instanciación del Módulo Principal del Sistema (UUT - Unit Under Test)
+    UUT : entity work.sistema_registro_top
+        port map (
+            reloj_in      => reloj_tb,
+            reset_in      => reset_tb,
+            sensor_pir_in => sensor_pir_tb,
+            alarma_out    => alarma_out_tb
+        );
+
+    -- Generador de reloj continuo de 50 MHz
+    PROCESO_RELOJ : process
+    begin
+        reloj_tb <= '0';
+        wait for PERIODODE_RELOJ / 2;
+        reloj_tb <= '1';
+        wait for PERIODODE_RELOJ / 2;
+    end process PROCESO_RELOJ;
+
+    -- Proceso de estímulos: Simulación de ruido, rebotes y eventos reales de presencia
+    PROCESO_ESTIMULOS : process
+    begin
+        -- 1. Aplicar reset inicial del sistema completo
+        reset_tb      <= '1';
+        sensor_pir_tb <= '0';
+        wait for 60 ns;
+
+        -- Liberar el reset y dejar estabilizar
+        reset_tb <= '0';
+        wait for 80 ns;
+
+        -- =========================================================================
+        -- FASE 1: SIMULACIÓN DE RUIDO Y REBOTES ESPURIOS
+        -- El controlador PIR debe ignorar estos cambios rápidos y cortos.
+        -- =========================================================================
+        sensor_pir_tb <= '1'; wait for 30 ns;
+        sensor_pir_tb <= '0'; wait for 40 ns;
+        sensor_pir_tb <= '1'; wait for 20 ns;
+        sensor_pir_tb <= '0'; wait for 60 ns;
+        sensor_pir_tb <= '1'; wait for 15 ns;
+        sensor_pir_tb <= '0';
+        wait for 300 ns; -- En este punto la RAM NO debe registrar nada (alarma_out en '0')
+
+        -- =========================================================================
+        -- FASE 2: PRIMERA DETECCIÓN VÁLIDA DE PRESENCIA
+        -- Se mantiene el sensor en '1' el tiempo suficiente para superar el filtro anti-rebote.
+        -- =========================================================================
+        sensor_pir_tb <= '1';
+        wait for 1.5 us;      -- Pulso sostenido de presencia
+        sensor_pir_tb <= '0';
+        wait for 400 ns;     -- Tiempo para que la FSM procese la lectura de la ROM y escritura en RAM
+
+        -- =========================================================================
+        -- FASE 3: SEGUNDA DETECCIÓN VÁLIDA DE PRESENCIA
+        -- Generará el almacenamiento del siguiente evento en la RAM consecutiva.
+        -- =========================================================================
+        sensor_pir_tb <= '1';
+        wait for 1.5 us;
+        sensor_pir_tb <= '0';
+        wait for 400 ns;
+
+        -- =========================================================================
+        -- FASE 4: TERCERA DETECCIÓN VÁLIDA DE PRESENCIA
+        -- =========================================================================
+        sensor_pir_tb <= '1';
+        wait for 1.5 us;
+        sensor_pir_tb <= '0';
+        wait for 400 ns;
+
+        -- Fin de la simulación global
+        wait;
+    end process PROCESO_ESTIMULOS;
+
+end architecture arqui_tb_sistema_registro_top;
