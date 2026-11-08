@@ -42,7 +42,7 @@ begin
     -- 1. Instanciación del Controlador PIR (Filtro antirrebote y flancos)
     INSTANCIA_CONTROLADOR_PIR : controlador_pir
         generic map (
-            ANCHO_CONTEO => 20
+            ANCHO_CONTEO => 50000
         )
         port map (
             reloj_in      => reloj_in,
