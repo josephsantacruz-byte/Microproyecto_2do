@@ -38,7 +38,7 @@ begin
     begin
         if rising_edge(reloj_in) then
             -- MODIFICACIÓN: Se añade el botón de reinicio de cuenta (activo en bajo '0')
-            if reset_in = '1' or btn_reset_cuenta_in = '0' then 
+            if reset_in = '1' then 
                 estado_actual <= REPOSO;
                 puntero_rom   <= (others => '0');
                 puntero_ram   <= (others => '0');
