@@ -2,88 +2,106 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Importación del paquete del sistema
-use work.pkg_system.all;
-
+-- El testbench no tiene puertos de entrada/salida físicos
 entity tb_sistema_registro_top is
 end entity tb_sistema_registro_top;
 
-architecture arqui_tb_sistema_registro_top of tb_sistema_registro_top is
+architecture arqui_tb of tb_sistema_registro_top is
 
-    -- Señales de estímulo y monitoreo para la entidad Top
-    signal reloj_tb      : std_logic := '0';
-    signal reset_tb      : std_logic := '1';
-    signal sensor_pir_tb : std_logic := '0';
-    signal seg_uni_tb    : std_logic_vector(6 downto 0);
-    signal seg_dec_tb    : std_logic_vector(6 downto 0);
-    signal alarma_out_tb : std_logic;
+    -- Declaración del componente Top que vamos a simular
+    component sistema_registro_top is
+        port (
+            reloj_in            : in  std_logic;
+            reset_in            : in  std_logic;
+            sensor_pir_in       : in  std_logic;
+            btn_reset_cuenta_in : in  std_logic;
+            seg_uni_out         : out std_logic_vector(6 downto 0);
+            seg_dec_out         : out std_logic_vector(6 downto 0);
+            alarma_out          : out std_logic
+        );
+    end component;
 
-    -- Periodo del reloj principal (50 MHz -> 20 ns)
-    constant PERIODO_RELOJ : time := 20 ns;
+    -- Señales de estímulo y monitoreo
+    signal reloj_tb            : std_logic := '0';
+    signal reset_tb            : std_logic := '1';
+    signal sensor_pir_tb       : std_logic := '0';
+    signal btn_reset_cuenta_tb : std_logic := '1'; -- Activo en bajo ('1' en reposo)
+    
+    signal seg_uni_tb          : std_logic_vector(6 downto 0);
+    signal seg_dec_tb          : std_logic_vector(6 downto 0);
+    signal alarma_tb           : std_logic;
+
+    -- Definición del periodo de reloj (50 MHz -> periodo de 20 ns)
+    constant CLK_PERIOD : time := 20 ns;
 
 begin
 
-    -- Instanciación del Sistema Top (Unit Under Test)
-    UUT : entity work.sistema_registro_top
+    -- Instanciación del módulo principal (UUT - Unit Under Test)
+    UUT : sistema_registro_top
         port map (
-            reloj_in      => reloj_tb,
-            reset_in      => reset_tb,
-            sensor_pir_in => sensor_pir_tb,
-            seg_uni_out   => seg_uni_tb,
-            seg_dec_out   => seg_dec_tb,
-            alarma_out    => alarma_out_tb
+            reloj_in            => reloj_tb,
+            reset_in            => reset_tb,
+            sensor_pir_in       => sensor_pir_tb,
+            btn_reset_cuenta_in => btn_reset_cuenta_tb,
+            seg_uni_out         => seg_uni_tb,  -- CORREGIDO: se usa =>
+            seg_dec_out         => seg_dec_tb,
+            alarma_out          => alarma_tb
         );
 
-    -- Generador de reloj continuo de 50 MHz
+    -- Generador de Reloj Principal
     PROCESO_RELOJ : process
     begin
         reloj_tb <= '0';
-        wait for PERIODO_RELOJ / 2;
+        wait for CLK_PERIOD / 2;
         reloj_tb <= '1';
-        wait for PERIODO_RELOJ / 2;
+        wait for CLK_PERIOD / 2;
     end process PROCESO_RELOJ;
 
-    -- Proceso de estímulos: Ruido, rebotes y detecciones válidas
+    -- Proceso de Estímulos (Secuencia de prueba)
     PROCESO_ESTIMULOS : process
     begin
-        -- Inicialización y aplicación de Reset general
-        reset_tb      <= '1';
+        -- 1. Estado inicial: Aplicar reset general por 100 ns
+        reset_tb <= '1';
         sensor_pir_tb <= '0';
-        wait for 60 ns;
-
-        -- Liberar el reset
+        btn_reset_cuenta_tb <= '1';
+        wait for 100 ns;
+        
+        -- Liberar el reset general
         reset_tb <= '0';
-        wait for 80 ns;
+        wait for 50 ns;
 
-        -- Simulación de ruido y rebotes rápidos (el filtro PIR debe ignorarlos)
-        sensor_pir_tb <= '1'; wait for 30 ns;
-        sensor_pir_tb <= '0'; wait for 40 ns;
-        sensor_pir_tb <= '1'; wait for 20 ns;
-        sensor_pir_tb <= '0'; wait for 60 ns;
-        sensor_pir_tb <= '1'; wait for 15 ns;
-        sensor_pir_tb <= '0';
-        wait for 300 ns;
-
-        -- Primera detección válida de presencia
+        -- 2. Simular primer evento de movimiento (Pulso en el sensor PIR)
         sensor_pir_tb <= '1';
-        wait for 1.5 us;
+        wait for 500 ns;
         sensor_pir_tb <= '0';
-        wait for 400 ns;
+        wait for 1 us;
 
-        -- Segunda detección válida: Incrementa la dirección RAM y actualiza los displays
+        -- 3. Simular segundo evento de movimiento
         sensor_pir_tb <= '1';
-        wait for 1.5 us;
+        wait for 500 ns;
         sensor_pir_tb <= '0';
-        wait for 400 ns;
+        wait for 1 us;
 
-        -- Tercera detección válida de presencia
+        -- 4. Simular tercer evento de movimiento
         sensor_pir_tb <= '1';
-        wait for 1.5 us;
+        wait for 500 ns;
         sensor_pir_tb <= '0';
-        wait for 400 ns;
+        wait for 1 us;
+
+        -- 5. Probar el botón de reinicio de cuenta (Activo en bajo '0')
+        btn_reset_cuenta_tb <= '0';
+        wait for 200 ns;
+        btn_reset_cuenta_tb <= '1';
+        wait for 500 ns;
+
+        -- 6. Simular un nuevo evento post-reinicio
+        sensor_pir_tb <= '1';
+        wait for 500 ns;
+        sensor_pir_tb <= '0';
+        wait for 1 us;
 
         -- Fin de la simulación
         wait;
     end process PROCESO_ESTIMULOS;
 
-end architecture arqui_tb_sistema_registro_top;
+end architecture arqui_tb;

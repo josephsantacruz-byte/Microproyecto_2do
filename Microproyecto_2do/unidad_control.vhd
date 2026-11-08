@@ -8,15 +8,16 @@ entity unidad_control is
         DATA_WIDTH : positive := 8
     );
     port (
-        reloj_in           : in  std_logic;                                    -- Reloj principal del sistema
-        reset_in           : in  std_logic;                                    -- Señal de reinicio general
-        pulso_deteccion_in : in  std_logic;                                    -- Pulso limpio proveniente del controlador PIR
-        dato_rom_in        : in  std_logic_vector(DATA_WIDTH - 1 downto 0);    -- Dato del evento leído desde la ROM
+        reloj_in            : in  std_logic;                                    -- Reloj principal del sistema
+        reset_in            : in  std_logic;                                    -- Señal de reinicio general
+        pulso_deteccion_in  : in  std_logic;                                    -- Pulso limpio proveniente del controlador PIR
+        dato_rom_in         : in  std_logic_vector(DATA_WIDTH - 1 downto 0);    -- Dato del evento leído desde la ROM
+        btn_reset_cuenta_in : in  std_logic;                                    -- NUEVO: Botón físico para reiniciar la cuenta (activo en bajo '0')
         
-        dir_rom_out        : out std_logic_vector(ADDR_WIDTH - 1 downto 0);    -- Dirección enviada a la ROM
-        dir_ram_out        : out std_logic_vector(ADDR_WIDTH - 1 downto 0);    -- Dirección de escritura/lectura enviada a la RAM
-        wr_en_ram_out      : out std_logic;                                    -- Habilitador de escritura para la RAM ('1' para guardar)
-        dato_ram_out       : out std_logic_vector(DATA_WIDTH - 1 downto 0)     -- Dato que se escribirá en la RAM
+        dir_rom_out         : out std_logic_vector(ADDR_WIDTH - 1 downto 0);    -- Dirección enviada a la ROM
+        dir_ram_out         : out std_logic_vector(ADDR_WIDTH - 1 downto 0);    -- Dirección de escritura/lectura enviada a la RAM
+        wr_en_ram_out       : out std_logic;                                    -- Habilitador de escritura para la RAM ('1' para guardar)
+        dato_ram_out        : out std_logic_vector(DATA_WIDTH - 1 downto 0)     -- Dato que se escribirá en la RAM
     );
 end entity unidad_control;
 
@@ -36,7 +37,8 @@ begin
     PROCESO_FSM : process(reloj_in)
     begin
         if rising_edge(reloj_in) then
-            if reset_in = '1' then
+            -- MODIFICACIÓN: Se añade el botón de reinicio de cuenta (activo en bajo '0')
+            if reset_in = '1' or btn_reset_cuenta_in = '0' then 
                 estado_actual <= REPOSO;
                 puntero_rom   <= (others => '0');
                 puntero_ram   <= (others => '0');

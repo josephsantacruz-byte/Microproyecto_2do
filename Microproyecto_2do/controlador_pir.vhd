@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity controlador_pir is
     generic (
-        ANCHO_CONTEO : integer := 20
+        ANCHO_CONTEO : integer := 10  -- Límite de ciclos para el filtro antirrebote
     );
     port (
         reloj_in      : in  std_logic;                                    -- Reloj principal del sistema
@@ -16,11 +16,8 @@ end entity controlador_pir;
 
 architecture arqui_controlador_pir of controlador_pir is
 
-    -- Declaración de la constante de filtrado antirrebote (Solución al error)
-    constant LIMITE_FILTRO_SENSOR : integer := 10;
-
     -- Señales internas para el filtrado y detección de flancos
-    signal contador_filtro : integer range 0 to LIMITE_FILTRO_SENSOR := 0;
+    signal contador_filtro : integer range 0 to ANCHO_CONTEO := 0;
     signal sensor_sinc_1   : std_logic := '0';
     signal sensor_sinc_2   : std_logic := '0';
     signal sensor_filtrado : std_logic := '0';
@@ -44,9 +41,9 @@ begin
                 sensor_sinc_1   <= sensor_pir_in;
                 sensor_sinc_2   <= sensor_sinc_1;
 
-                -- 2. Filtro antirrebote basado en temporización
+                -- 2. Filtro antirrebote basado en temporización usando el genérico
                 if sensor_sinc_2 /= sensor_filtrado then
-                    if contador_filtro < LIMITE_FILTRO_SENSOR - 1 then
+                    if contador_filtro < ANCHO_CONTEO - 1 then
                         contador_filtro <= contador_filtro + 1;
                     else
                         contador_filtro <= 0;
