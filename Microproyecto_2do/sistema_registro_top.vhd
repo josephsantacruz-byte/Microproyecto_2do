@@ -10,7 +10,8 @@ entity sistema_registro_top is
     port (
         reloj_in            : in  std_logic;                                    -- Reloj principal del sistema (ej. 50 MHz)
         reset_in            : in  std_logic;                                    -- Señal de reinicio general
-        sensor_pir_in       : in  std_logic;                                    -- Señal física cruda del sensor PIR
+       
+		 sensor_pir_in       : in  std_logic;                                    -- Señal física cruda del sensor PIR
         btn_reset_cuenta_in : in  std_logic;                                    -- Botón físico para reiniciar la cuenta (activo en bajo '0')
         
         -- Salidas físicas hacia los displays de 7 segmentos de la FPGA
