@@ -5,8 +5,8 @@ use ieee.numeric_std.all;
 package pkg_system is
 
     -- Constantes globales de configuración para el ancho de bus de datos y direcciones
-    constant DATA_WIDTH : positive := 8;
-    constant ADDR_WIDTH : positive := 4;
+    constant DATA_WIDTH : positive := 8; --ancho de palabra 
+    constant ADDR_WIDTH : positive := 4;  --ancho de direcciones
 
     -- Definición del tipo de matriz estática para la memoria ROM del sistema (16 posiciones de 8 bits)
     type tipo_memoria_rom is array (0 to 2**ADDR_WIDTH - 1) of std_logic_vector(DATA_WIDTH - 1 downto 0);
