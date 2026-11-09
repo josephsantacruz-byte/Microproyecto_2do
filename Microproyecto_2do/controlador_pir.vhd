@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity controlador_pir is
     generic (
-        ANCHO_CONTEO : integer := 500000  -- 500,000 ciclos = 10 ms a 50 MHz para el sensor HC-SR501
+        ANCHO_CONTEO : integer := 500000  -- 500,000 ciclos = 10 ms a 50 MHz para el sensor HC-SR501, ciclos de reloj necesario para dar por valida la señal
     );
     port (
         reloj_in      : in  std_logic;                                    -- Reloj principal del sistema
