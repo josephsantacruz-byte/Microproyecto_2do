@@ -19,11 +19,8 @@ end entity ram_memoria;
 
 architecture arqui_ram_memoria of ram_memoria is
 
-    -- Definición del tipo de matriz para la memoria RAM
-    type tipo_memoria_ram is array (0 to 2**ADDR_WIDTH - 1) of std_logic_vector(DATA_WIDTH - 1 downto 0);
-    
-    -- Instanciación de la memoria interna inicializada en ceros
-    signal memoria_ram : tipo_memoria_ram := (others => (others => '0'));
+    -- Instanciación de la memoria interna usando el tipo definido en pkg_system
+    signal memoria_ram      : tipo_memoria_ram := (others => (others => '0'));
 
     -- Señales internas de control y direccionamiento
     signal indice_direccion : integer range 0 to 2**ADDR_WIDTH - 1;
@@ -42,7 +39,6 @@ begin
     PROCESO_RAM : process(reloj_in)
     begin
         if rising_edge(reloj_in) then
-            -- Si la señal de escritura está activa, guarda el dato en la dirección actual
             if wr_en_in = '1' then
                 memoria_ram(indice_direccion) <= dato_in;
             end if;

@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity controlador_pir is
     generic (
-        ANCHO_CONTEO : integer := 10  -- Límite de ciclos para el filtro antirrebote
+        ANCHO_CONTEO : integer := 500000  -- 500,000 ciclos = 10 ms a 50 MHz para el sensor HC-SR501
     );
     port (
         reloj_in      : in  std_logic;                                    -- Reloj principal del sistema
@@ -31,13 +31,13 @@ begin
         if rising_edge(reloj_in) then
             if reset_in = '1' then
                 contador_filtro <= 0;
-                sensor_sinc_1   <= sensor_pir_in;
-                sensor_sinc_2   <= sensor_pir_in;
-                sensor_filtrado <= sensor_pir_in;
-                sensor_anterior <= sensor_pir_in;
+                sensor_sinc_1   <= '0';
+                sensor_sinc_2   <= '0';
+                sensor_filtrado <= '0';
+                sensor_anterior <= '0';
                 pulso_out       <= '0';
             else
-                -- 1. Sincronización de la señal asíncrona del sensor PIR para evitar metaestabilidad
+                -- 1. Sincronización de doble etapa de la señal del sensor PIR para evitar metaestabilidad
                 sensor_sinc_1   <= sensor_pir_in;
                 sensor_sinc_2   <= sensor_sinc_1;
 

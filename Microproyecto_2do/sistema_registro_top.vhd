@@ -8,45 +8,51 @@ use work.pkg_componentes.all;
 
 entity sistema_registro_top is
     port (
-        reloj_in            : in  std_logic;                                    -- Reloj principal del sistema (ej. 50 MHz)
-        reset_in            : in  std_logic;                                    -- Señal de reinicio general
-       
-		 sensor_pir_in       : in  std_logic;                                    -- Señal física cruda del sensor PIR
-        btn_reset_cuenta_in : in  std_logic;                                    -- Botón físico para reiniciar la cuenta (activo en bajo '0')
+        reloj_in            : in  std_logic;                    -- Reloj principal del sistema (50 MHz)
+        reset_in            : in  std_logic := '0';             -- Señal de reinicio general (activo en '1', conectar a Switch)
+        sensor_pir_in       : in  std_logic;                    -- Señal física cruda del sensor PIR HC-SR501
+        btn_reset_cuenta_in : in  std_logic := '1';             -- Botón físico para reiniciar la cuenta (activo en bajo '0')
         
-        -- Salidas físicas hacia los displays de 7 segmentos de la FPGA
-        seg_uni_out         : out std_logic_vector(6 downto 0);                 -- Display de unidades
-        seg_dec_out         : out std_logic_vector(6 downto 0);                 -- Display de decenas
+        -- 4 Salidas físicas hacia los displays de 7 segmentos de la FPGA
+        seg_uni_out         : out std_logic_vector(6 downto 0); -- Display 1 (HEX0): Dígito bajo del código en RAM
+        seg_dec_out         : out std_logic_vector(6 downto 0); -- Display 2 (HEX1): Dígito alto del código en RAM
+        seg_cen_out         : out std_logic_vector(6 downto 0); -- Display 3 (HEX2): Unidades del contador de eventos
+        seg_mil_out         : out std_logic_vector(6 downto 0); -- Display 4 (HEX3): Decenas del contador de eventos
         
-        -- Indicador visual opcional
-        alarma_out          : out std_logic                                     -- Indicador de escritura activa en RAM
+        -- Indicador visual LED
+        alarma_out          : out std_logic                     -- LED indicador de detección activa / escritura en RAM
     );
 end entity sistema_registro_top;
 
 architecture arqui_sistema_top of sistema_registro_top is
 
     -- Señales internas de interconexión entre los módulos
-    signal pulso_pir_s    : std_logic;
-    signal dir_rom_s      : std_logic_vector(ADDR_WIDTH - 1 downto 0);
-    signal dir_ram_s      : std_logic_vector(ADDR_WIDTH - 1 downto 0);
-    signal dato_rom_s     : std_logic_vector(DATA_WIDTH - 1 downto 0);
-    signal dato_ram_s     : std_logic_vector(DATA_WIDTH - 1 downto 0);
-    signal wr_en_ram_s    : std_logic;
+    signal pulso_pir_s      : std_logic;
+    signal reset_combinado  : std_logic;
+    signal dir_rom_s        : std_logic_vector(ADDR_WIDTH - 1 downto 0);
+    signal dir_ram_s        : std_logic_vector(ADDR_WIDTH - 1 downto 0);
+    signal dato_rom_s       : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal dato_ram_s       : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal dato_leido_ram_s : std_logic_vector(DATA_WIDTH - 1 downto 0);
+    signal wr_en_ram_s      : std_logic;
     
-    -- Señales para separar unidades y decenas del conteo de la RAM
-    signal unidades_sig   : unsigned(3 downto 0);
-    signal decenas_sig    : unsigned(3 downto 0);
+    -- Señales para separar unidades y decenas del conteo de movimientos (Displays 3 y 4)
+    signal unidades_sig     : unsigned(3 downto 0);
+    signal decenas_sig      : unsigned(3 downto 0);
 
 begin
 
-    -- 1. Instanciación del Controlador PIR (Filtro antirrebote y flancos)
+    -- Combina ambos reinicios para limpiar también el controlador PIR al pulsar el botón
+    reset_combinado <= '1' when (reset_in = '1' or btn_reset_cuenta_in = '0') else '0';
+
+    -- 1. Instanciación del Controlador PIR (500,000 ciclos = 10 ms a 50 MHz)
     INSTANCIA_CONTROLADOR_PIR : controlador_pir
         generic map (
-            ANCHO_CONTEO => 50000
+            ANCHO_CONTEO => 500000
         )
         port map (
             reloj_in      => reloj_in,
-            reset_in      => reset_in,
+            reset_in      => reset_combinado,
             sensor_pir_in => sensor_pir_in,
             pulso_out     => pulso_pir_s
         );
@@ -81,7 +87,7 @@ begin
             dato_out     => dato_rom_s
         );
 
-    -- 4. Instanciación de la Memoria RAM (Registro dinámico de presencia)
+    -- 4. Instanciación de la Memoria RAM (Registro dinámico conectado a los displays)
     INSTANCIA_RAM_MEMORIA : ram_memoria
         generic map (
             DATA_WIDTH => DATA_WIDTH,
@@ -92,28 +98,42 @@ begin
             wr_en_in     => wr_en_ram_s,
             direccion_in => dir_ram_s,
             dato_in      => dato_ram_s,
-            dato_out     => open  
+            dato_out     => dato_leido_ram_s
         );
 
-    -- 5. Separación matemática del valor de la RAM en Unidades y Decenas
-    unidades_sig <= unsigned(dir_ram_s) mod 10;
-    decenas_sig  <= (unsigned(dir_ram_s) / 10) mod 10;
+    -- 5. Separación matemática del número de eventos en Unidades y Decenas para los Displays 3 y 4
+    unidades_sig <= unsigned(dir_rom_s) mod 10;
+    decenas_sig  <= (unsigned(dir_rom_s) / 10) mod 10;
 
-    -- 6. Instanciación del Decodificador para las Unidades
+    -- 6. Display 1 (seg_uni_out): Muestra los 4 bits bajos del dato almacenado en la RAM
     INSTANCIA_DECO_UNIDADES : hex_decoder
         port map (
-            bin_in  => std_logic_vector(unidades_sig),
+            bin_in  => dato_leido_ram_s(3 downto 0),
             seg_out => seg_uni_out
         );
 
-    -- 7. Instanciación del Decodificador para las Decenas
+    -- 7. Display 2 (seg_dec_out): Muestra los 4 bits altos del dato almacenado en la RAM
     INSTANCIA_DECO_DECENAS : hex_decoder
         port map (
-            bin_in  => std_logic_vector(decenas_sig),
+            bin_in  => dato_leido_ram_s(7 downto 4),
             seg_out => seg_dec_out
         );
 
-    -- Asignación de salida para monitoreo de escritura
-    alarma_out <= wr_en_ram_s;
+    -- 8. Display 3 (seg_cen_out): Muestra las unidades del conteo de detecciones (0 a 9)
+    INSTANCIA_DECO_CENTENAS : hex_decoder
+        port map (
+            bin_in  => std_logic_vector(unidades_sig),
+            seg_out => seg_cen_out
+        );
+
+    -- 9. Display 4 (seg_mil_out): Muestra las decenas del conteo de detecciones (0 a 1)
+    INSTANCIA_DECO_MILES : hex_decoder
+        port map (
+            bin_in  => std_logic_vector(decenas_sig),
+            seg_out => seg_mil_out
+        );
+
+    -- Asignación de salida LED: se enciende mientras el sensor detecta movimiento o escribe en RAM
+    alarma_out <= wr_en_ram_s or sensor_pir_in;
 
 end architecture arqui_sistema_top;

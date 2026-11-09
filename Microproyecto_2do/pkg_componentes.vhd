@@ -1,12 +1,13 @@
 library ieee;
 use ieee.std_logic_1164.all;
+use work.pkg_system.all;
 
 package pkg_componentes is
 
     -- 1. Componente del Controlador PIR (Filtro antirrebote y flancos)
     component controlador_pir is
         generic (
-            ANCHO_CONTEO : integer := 20
+            ANCHO_CONTEO : integer := 500000
         );
         port (
             reloj_in      : in  std_logic;
@@ -19,8 +20,8 @@ package pkg_componentes is
     -- 2. Componente de la Memoria ROM (Almacén de eventos)
     component rom_memoria is
         generic (
-            DATA_WIDTH : positive := 8;
-            ADDR_WIDTH : positive := 4
+            DATA_WIDTH : positive := DATA_WIDTH;
+            ADDR_WIDTH : positive := ADDR_WIDTH
         );
         port (
             reloj_in     : in  std_logic;
@@ -32,8 +33,8 @@ package pkg_componentes is
     -- 3. Componente de la Memoria RAM (Registro dinámico de presencia)
     component ram_memoria is
         generic (
-            DATA_WIDTH : positive := 8;
-            ADDR_WIDTH : positive := 4
+            DATA_WIDTH : positive := DATA_WIDTH;
+            ADDR_WIDTH : positive := ADDR_WIDTH
         );
         port (
             reloj_in     : in  std_logic;
@@ -47,8 +48,8 @@ package pkg_componentes is
     -- 4. Componente de la Unidad de Control (FSM coordinadora con botón de reinicio)
     component unidad_control is
         generic (
-            ADDR_WIDTH : positive := 4;
-            DATA_WIDTH : positive := 8
+            ADDR_WIDTH : positive := ADDR_WIDTH;
+            DATA_WIDTH : positive := DATA_WIDTH
         );
         port (
             reloj_in            : in  std_logic;
