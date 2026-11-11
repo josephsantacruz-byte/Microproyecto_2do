@@ -2,7 +2,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- Importación de los paquetes del sistema y de componentes
 use work.pkg_system.all;
 use work.pkg_componentes.all;
 
