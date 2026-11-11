@@ -19,6 +19,7 @@ architecture arqui_rom_memoria of rom_memoria is
 
     -- Inicialización estática de la memoria ROM usando el tipo centralizado en pkg_system
     constant CONTENIDO_ROM : tipo_memoria_rom := (
+	 --para la simulacion simulamos distintos timpos de deteccion con su respectivo codigo
         0  => x"01", -- Evento 1: Presencia detectada en Zona A
         1  => x"02", -- Evento 2: Presencia detectada en Zona B
         2  => x"03", -- Evento 3: Presencia detectada en Pasillo
